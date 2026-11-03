@@ -33,7 +33,8 @@ def save_js(path, var, obj):
 
 
 def norm(s):
-    return " ".join(s.split()).casefold()
+    # ignore spacing and invisible characters (Spotify titles sometimes carry zero-width marks)
+    return re.sub(r"[\s\u00a0\u200b-\u200f\u2060\ufeff]+", "", s).casefold()
 
 
 class TableRows(HTMLParser):
