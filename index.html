@@ -1,0 +1,843 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Hits by Design: A DMAIC Study of Omar Courtz's Album Streams</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.9.0/d3.min.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Fraunces:opsz,wght@9..144,600&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#f7f6f3;--panel:#fff;--fg:#1b1b1f;--muted:#6b6b76;--line:#e4e2dc;--a:#c2417a;--b:#1f8a8a;--soft:#f0eee9;--bad:#b4442c;--ok:#2f7d4f}
+@media (prefers-color-scheme:dark){:root{--bg:#121214;--panel:#1b1b1f;--fg:#ececf0;--muted:#9a9aa6;--line:#2c2c33;--a:#e2689c;--b:#3fb3b0;--soft:#24242a}}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--fg);font:14px/1.45 Inter,system-ui,sans-serif}
+.wrap{max-width:1180px;margin:0 auto;padding:28px 20px 60px}
+h1{font:600 30px/1.15 Fraunces,Georgia,serif;margin:0 0 6px}
+h2{font-size:17px;margin:0 0 4px}
+.sub{color:var(--muted);margin:0}
+.lead{font-size:15px;max-width:820px;margin:14px 0 0}
+.controls{position:sticky;top:0;z-index:5;background:var(--bg);display:flex;flex-wrap:wrap;gap:10px 18px;align-items:center;padding:12px 0;margin:18px 0 6px;border-bottom:1px solid var(--line)}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:8px;overflow:hidden;background:var(--panel)}
+.seg button{border:0;background:none;color:var(--fg);padding:6px 11px;font:inherit;font-size:13px;cursor:pointer}
+.seg button.on{background:var(--fg);color:var(--bg)}
+label.chk{display:inline-flex;gap:6px;align-items:center;font-size:13px;color:var(--muted);cursor:pointer}
+.lab{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;margin-right:4px}
+.grid{display:grid;gap:16px}
+.g2{grid-template-columns:repeat(auto-fit,minmax(340px,1fr))}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:18px}
+.card .q{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px}
+.find{font-size:14px;margin:4px 0 12px}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-top:12px}
+.kpi .v{font:600 24px/1.1 Fraunces,Georgia,serif}
+.kpi .l{font-size:12px;color:var(--muted)}
+.albhead{display:flex;align-items:center;gap:8px;font-weight:600}
+.dot{width:10px;height:10px;border-radius:50%;display:inline-block}
+.legend{display:flex;gap:14px;font-size:12px;color:var(--muted);flex-wrap:wrap}
+.legend span{display:inline-flex;gap:6px;align-items:center}
+svg text{fill:var(--muted);font-size:11px}
+svg .lbl{fill:var(--fg);font-size:12px}
+.axis path,.axis line{stroke:var(--line)}
+.tip{position:fixed;pointer-events:none;background:var(--fg);color:var(--bg);padding:8px 10px;border-radius:8px;font-size:12px;max-width:260px;opacity:0;transition:opacity .1s;z-index:20}
+table{border-collapse:collapse;width:100%;font-size:13px}
+th,td{padding:6px 8px;border-bottom:1px solid var(--line);text-align:left;white-space:nowrap}
+th{font-weight:600;color:var(--muted);cursor:pointer;user-select:none;position:sticky;top:0;background:var(--panel)}
+td.n,th.n{text-align:right;font-variant-numeric:tabular-nums}
+.scroll{overflow:auto;max-height:520px}
+select{font:inherit;font-size:13px;background:var(--panel);color:var(--fg);border:1px solid var(--line);border-radius:6px;padding:3px 6px}
+.btn{border:1px solid var(--line);background:var(--panel);color:var(--fg);border-radius:8px;padding:6px 12px;font:inherit;font-size:13px;cursor:pointer}
+.btn:hover{border-color:var(--fg)}
+.note{font-size:12px;color:var(--muted)}
+.pill{font-size:11px;padding:1px 6px;border-radius:99px;background:var(--soft);color:var(--muted)}
+ul.cav{margin:6px 0 0;padding-left:18px}ul.cav li{margin:4px 0}
+section{margin-top:18px}
+.tabs{display:flex;gap:4px;margin-top:18px;border-bottom:1px solid var(--line)}
+.tabs a{padding:9px 14px;text-decoration:none;color:var(--muted);font-weight:500;border-bottom:2px solid transparent;margin-bottom:-1px}
+.tabs a.on{color:var(--fg);border-color:var(--fg)}
+.phase{display:flex;gap:12px;align-items:baseline;margin:30px 0 4px;scroll-margin-top:12px}
+.phase .L{font:600 34px/1 Fraunces,Georgia,serif;color:var(--a)}
+.phase h2{font-size:20px}.phase p{margin:0;color:var(--muted)}
+.dnav{display:flex;gap:6px;flex-wrap:wrap;margin:16px 0 0}
+.dnav a{font-size:12px;padding:4px 10px;border:1px solid var(--line);border-radius:99px;text-decoration:none;color:var(--muted);background:var(--panel)}
+.kv{display:grid;grid-template-columns:max-content 1fr;gap:8px 16px;font-size:13px}.kv b{color:var(--muted);font-weight:500}
+.rec{border-left:3px solid var(--b);padding:2px 0 2px 14px;margin:14px 0}
+.rec h3{margin:0 0 2px;font-size:15px}.rec p{margin:2px 0;font-size:13px}
+.ev{color:var(--muted)}
+.conf{font-size:11px;padding:1px 7px;border-radius:99px;margin-left:8px;vertical-align:middle;font-weight:500}
+.c-hi{background:color-mix(in srgb,var(--ok) 18%,transparent);color:var(--ok)}
+.c-md{background:color-mix(in srgb,#c98a1a 20%,transparent);color:#a8710f}
+.c-lo{background:var(--soft);color:var(--muted)}
+.plan{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:18px;align-items:start}
+.plan label{display:block;font-size:13px;margin:10px 0 2px}.plan input[type=range]{width:100%}
+.out .v{font:600 30px/1.1 Fraunces,Georgia,serif}
+.whys{padding-left:20px;margin:6px 0}.whys li{margin:10px 0}
+td.wr{white-space:normal}
+a{color:inherit}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Hits by Design</h1>
+  <p class="sub" style="font-size:16px;color:var(--fg);margin-bottom:4px">A DMAIC study of Omar Courtz's album streams</p>
+  <p class="sub" style="margin-bottom:6px">By <b style="color:var(--fg)">Fernando Zegrí</b> · University of Puerto Rico</p>
+  <p class="sub">PRIMERA MUSA (Sept 20, 2024 · 17 songs) vs POR SI MAÑANA NO ESTOY (Feb 19, 2026 · 18 songs) · Spotify streams as of <span class="asof"></span> · <span id="upd-status"></span></p>
+  <p class="lead" id="lead"></p>
+  <nav class="tabs" id="tabs"><a href="#about" data-t="about">About</a><a href="#dashboard" data-t="dashboard">Dashboard</a><a href="#dmaic" data-t="dmaic">DMAIC &amp; Album 3 plan</a></nav>
+  <div id="tab-about">
+    <section class="card" style="margin-top:18px">
+      <div class="q">Project description</div>
+      <p class="find" style="font-size:15px">This project uses Six Sigma Yellow Belt DMAIC tools and a streaming dashboard to answer one question: <b>how should Omar Courtz build and time his third album</b>, based on how the songs on his first two albums performed. It treats an album as a product line. Each song is a product, and its daily Spotify streams are the quality measure.</p>
+      <div class="kpis" id="ab-kpis"></div>
+      <p class="note" style="margin-top:14px">Author: <b>Fernando Zegrí</b>, University of Puerto Rico. Built as a Six Sigma Yellow Belt portfolio project. Live site: <a href="https://fzegri.github.io/hits-by-design/">fzegri.github.io/hits-by-design</a> · Source code: <a href="https://github.com/fzegri/hits-by-design">github.com/fzegri/hits-by-design</a></p>
+    </section>
+
+    <section class="grid g2">
+      <div class="card">
+        <div class="q">Key findings</div>
+        <ol class="whys" id="ab-find"></ol>
+      </div>
+      <div class="card">
+        <div class="q">How to use this page</div>
+        <table><tbody>
+          <tr><td><a href="#dashboard"><b>Dashboard</b></a></td><td class="wr">Compare the two albums song by song. Switch the measure (current daily, per day since release, total), filter by album, and leave out pre-release singles or each album's top song.</td></tr>
+          <tr><td><a href="#dmaic"><b>DMAIC &amp; Album 3 plan</b></a></td><td class="wr">The improvement study, step by step: Define → Measure → Analyze → Improve → Control. Includes the Album 3 brief, a tracklist calculator and the recommended release calendar.</td></tr>
+        </tbody></table>
+        <div class="q" style="margin-top:16px">Scope</div>
+        <p class="ev" style="margin:0">35 songs from 2 studio albums: <b>PRIMERA MUSA</b> (Sept 20, 2024, 17 songs) and <b>POR SI MAÑANA NO ESTOY</b> (Feb 19, 2026, 18 songs). Omar's guest features on other artists' songs and non-album singles are left out.</p>
+      </div>
+    </section>
+
+    <section class="grid g2">
+      <div class="card">
+        <div class="q">Data &amp; cleaning</div>
+        <table><thead><tr><th>Data</th><th>Source</th></tr></thead><tbody>
+          <tr><td>Total &amp; daily Spotify streams</td><td class="wr">kworb.net, updated weekly (latest <span class="asof"></span>)</td></tr>
+          <tr><td>Song length, track order</td><td class="wr">Wikipedia, Deezer</td></tr>
+          <tr><td>Featured artists</td><td class="wr">Wikipedia, credit pages (cross-checked)</td></tr>
+          <tr><td>Single &amp; release dates</td><td class="wr">Apple Music, Wikipedia, press releases</td></tr>
+        </tbody></table>
+        <ul class="cav">
+          <li>Stylized titles normalized (e.g. "Q U E V A S H A C E R H O Y ?" → "¿Qué Vas a Hacer Hoy?")</li>
+          <li>One wrong credit removed. Producers aren't counted as featured artists.</li>
+          <li>Added length groups, release type, and streams per day since each song's own release</li>
+        </ul>
+      </div>
+      <div class="card">
+        <div class="q">Methods &amp; tools</div>
+        <table><thead><tr><th>Phase</th><th>Tools used</th></tr></thead><tbody>
+          <tr><td>Define</td><td class="wr">Project charter, SIPOC, process map</td></tr>
+          <tr><td>Measure</td><td class="wr">Data collection plan, baseline, fair comparison (per-day streams)</td></tr>
+          <tr><td>Analyze</td><td class="wr">Pareto / ABC classification, fishbone diagram, median comparisons, 5 Whys</td></tr>
+          <tr><td>Improve</td><td class="wr">Prioritized recommendations, tracklist calculator, release calendar</td></tr>
+          <tr><td>Control</td><td class="wr">Run chart plan, momentum ratio, control plan with triggers</td></tr>
+        </tbody></table>
+        <p class="note" style="margin-top:8px">Built with D3.js from the cleaned CSV dataset.</p>
+      </div>
+    </section>
+
+    <section class="card">
+      <div class="q">Limitations</div>
+      <ul class="cav">
+        <li><b>Small sample:</b> 35 songs and 2 albums. Patterns are labeled by whether both albums agree. They're associations, not proven causes.</li>
+        <li><b>Short history:</b> weekly snapshots started Oct 31, 2026 (<span class="nsnap"></span> so far). Trends get more reliable as weeks build up.</li>
+        <li><b>Not measured:</b> song quality, promotion budget, playlist placement and music videos aren't in public data. They likely explain much of the difference between songs.</li>
+        <li><b>Release date:</b> based on patterns from 2 past albums. It doesn't account for competing releases or seasonality.</li>
+      </ul>
+    </section>
+</div>
+  <div id="tab-dashboard" hidden>
+
+  <div class="controls">
+    <span><span class="lab">Measure</span><span class="seg" id="metric">
+      <button data-v="DailyStreams" class="on">Current daily</button>
+      <button data-v="StreamsPerDay">Per day since release</button>
+      <button data-v="TotalStreams">Total</button></span></span>
+    <span><span class="lab">Album</span><span class="seg" id="album">
+      <button data-v="all" class="on">Both</button>
+      <button data-v="PRIMERA MUSA">Primera Musa</button>
+      <button data-v="POR SI MAÑANA NO ESTOY">Por Si Mañana</button></span></span>
+    <label class="chk"><input type="checkbox" id="xpre"> Exclude pre-release singles</label>
+    <label class="chk"><input type="checkbox" id="xtop"> Exclude each album's #1 song</label>
+  </div>
+
+  <section class="grid g2" id="kpicards"></section>
+
+  <section class="card">
+    <div class="q">Every song, ranked</div>
+    <p class="find" id="f-rank"></p>
+    <div class="legend" id="leg1"></div>
+    <div id="c-rank"></div>
+  </section>
+
+  <section class="grid g2">
+    <div class="card">
+      <div class="q">1 · Featured artists</div>
+      <p class="find" id="f-feat"></p>
+      <div id="c-feat"></div>
+      <p class="note">Median per song. Each bar is labeled with its song count, so you can see how small each group is.</p>
+    </div>
+    <div class="card">
+      <div class="q">Who's featured</div>
+      <p class="find" id="f-who"></p>
+      <div id="c-who"></div>
+    </div>
+  </section>
+
+  <section class="grid g2">
+    <div class="card">
+      <div class="q">2 · Song duration</div>
+      <p class="find" id="f-dur"></p>
+      <div id="c-dur"></div>
+      <p class="note">Log scale. r is the Pearson correlation on raw values for each album. Values near 0 mean no linear relationship.</p>
+    </div>
+    <div class="card">
+      <div class="q">3 · Song quantity &amp; concentration</div>
+      <p class="find" id="f-conc"></p>
+      <div id="c-conc"></div>
+      <p class="note">Cumulative share of each album's streams, adding songs from biggest to smallest. A steeper curve means the album leans on fewer songs.</p>
+    </div>
+  </section>
+
+
+  <section class="card">
+    <div class="q">Clean dataset</div>
+    <p class="find">The cleaned table behind every chart. Click a column header to sort. This is the same data as the CSVs you'll load into Power BI.</p>
+    <div class="scroll"><table id="datatbl"></table></div>
+  </section>
+
+  <section class="card">
+    <div class="q">Read with care</div>
+    <ul class="cav">
+      <li><b>35 songs, 2 albums.</b> These patterns are associations to test, not causes. Medians are used because one song (¿Qué Vas a Hacer Hoy?, 714M) skews every average.</li>
+      <li><b>Time out matters.</b> Primera Musa has had <span class="days1"></span> days, Por Si Mañana <span class="days2"></span>. Compare using <i>current daily</i> or <i>per day since release</i>, not totals.</li>
+      <li><b>Release dates</b> come from Apple Music and Wikipedia: 6 pre-release singles, 1 album-eve single (Goddess) and 1 post-album single (¿Qué Vas a Hacer Hoy?). "Per day since release" uses each song's own release date.</li>
+      <li><b>Cleaning applied:</b> stylized titles normalized (Spotify spelling kept in <code>SpotifyTitle</code>). Tito El Bambino removed from $uelta Gatita $uelta (not in official credits). Myke Towers on What U Need? verified. Producers (KARBeats, BASSYY) are not counted as features. Duration bands added. Release type filled in for all songs.</li>
+          </ul>
+    <p class="note" style="margin-top:10px">Sources: <a href="https://kworb.net/spotify/artist/3E12tRURRvPfHz0hAMCFYc_songs.html">kworb.net (streams, updated weekly)</a> · <a href="https://en.wikipedia.org/wiki/Primera_Musa">Wikipedia: Primera Musa</a> · <a href="https://www.deezer.com/album/921955431">Deezer: Por Si Mañana No Estoy</a> · <a href="https://lyricsworldyou.com/album/por-si-manana-no-estoy/">LyricsWorldYou credits</a> · <a href="https://music.apple.com/us/artist/omar-courtz/1370744631">Apple Music</a></p>
+  </section>
+  </div>
+  <div id="tab-dmaic" hidden>
+    <p class="lead">This tab runs Omar Courtz's catalog through a Yellow Belt DMAIC project. The goal is to recommend how he should build and time a third album, using PRIMERA MUSA and POR SI MAÑANA NO ESTOY as the reference. The output measure is <b>daily Spotify streams per song</b>. Every conclusion uses medians, percentages and simple charts.</p>
+    <div class="dnav"><a href="#dmaic" data-jump="d-define">D · Define</a><a href="#dmaic" data-jump="d-measure">M · Measure</a><a href="#dmaic" data-jump="d-analyze">A · Analyze</a><a href="#dmaic" data-jump="d-improve">I · Improve: Album 3 plan</a><a href="#dmaic" data-jump="d-timing">I · Release date</a><a href="#dmaic" data-jump="d-control">C · Control</a></div>
+
+    <div class="phase" id="d-define"><span class="L">D</span><div><h2>Define</h2><p>What problem are we solving, and for whom?</p></div></div>
+    <section class="grid g2" style="margin-top:8px">
+      <div class="card">
+        <div class="q">Project charter</div>
+        <div class="kv">
+          <b>Problem</b><span>Streams are concentrated in a few songs. On PRIMERA MUSA the top 3 songs earn 53% of the album's streams, so many tracks add little.</span>
+          <b>Goal</b><span>Recommend an album structure and release date for Album 3 that raise median daily streams per song above the POR SI MAÑANA NO ESTOY baseline.</span>
+          <b>Measure (Y)</b><span>Daily Spotify streams per song (kworb, refreshed weekly, latest <span class="asof"></span>)</span>
+          <b>Factors checked</b><span>Featured artist or not, song length, intro/interlude/outro tracks, pre-release singles, tracklist position, album size, release timing</span>
+          <b>Scope</b><span>In: 35 songs on 2 studio albums. Out: Omar's features on other artists' songs, non-album singles.</span>
+          <b>Stakeholders</b><span>Artist, label (Rimas / Mr. 305), featured artists, listeners</span>
+        </div>
+      </div>
+      <div class="card">
+        <div class="q">SIPOC</div>
+        <table><thead><tr><th>Suppliers</th><th>Inputs</th><th>Process</th><th>Outputs</th><th>Customers</th></tr></thead>
+        <tbody><tr><td class="wr">Artist, producers, featured artists, label</td><td class="wr">Songs, features, release plan, promotion</td><td class="wr">See process map below</td><td class="wr">Streams, chart positions, playlist adds</td><td class="wr">Listeners, Spotify playlists, tour audience</td></tr></tbody></table>
+        <div class="q" style="margin-top:16px">Process map: how an album reaches listeners</div>
+        <div id="d-pmap"></div>
+      </div>
+    </section>
+
+    <div class="phase" id="d-measure"><span class="L">M</span><div><h2>Measure</h2><p>Can we trust the data, and what is the baseline?</p></div></div>
+    <section class="grid g2" style="margin-top:8px">
+      <div class="card">
+        <div class="q">Data collection plan</div>
+        <table><thead><tr><th>Data</th><th>Source</th><th>Confidence</th></tr></thead><tbody>
+          <tr><td>Total &amp; daily streams</td><td class="wr">kworb.net (Spotify-reported), pulled weekly. Latest: <span class="asof"></span></td><td>High</td></tr>
+          <tr><td>Song length, track order</td><td class="wr">Wikipedia (Primera Musa), Deezer (Por Si Mañana)</td><td>High</td></tr>
+          <tr><td>Featured artists</td><td class="wr">Wikipedia, plus lyrics credit pages for album 2. Two credits cross-checked</td><td>Medium–high</td></tr>
+          <tr><td>Single &amp; release dates</td><td class="wr">Apple Music singles list, Wikipedia, press releases. All 35 songs classified</td><td>High</td></tr>
+        </tbody></table>
+        <p class="note" style="margin-top:8px">Cleaning log: stylized titles normalized, one wrong credit removed (Tito El Bambino), producers kept out of the features list, length groups and release type added. To compare fairly across albums, each song's lifetime streams are divided by the days since its own release.</p>
+      </div>
+      <div class="card">
+        <div class="q">Baseline: where we start</div>
+        <p class="find">The albums have been out for different lengths of time (<span class="days1"></span> vs <span class="days2"></span> days), so lifetime totals aren't a fair comparison. The baseline uses current daily streams.</p>
+        <div class="kpis" id="m-base"></div>
+      </div>
+    </section>
+
+    <div class="phase" id="d-analyze"><span class="L">A</span><div><h2>Analyze</h2><p>Where do the streams come from, and what separates strong songs from weak ones?</p></div></div>
+    <section class="card">
+      <div class="q">Pareto / ABC classification (both albums, total streams)</div>
+      <p class="find" id="a-abc-f"></p>
+      <div class="legend" id="a-abc-leg"></div>
+      <div id="a-abc"></div>
+    </section>
+    <section class="card">
+      <div class="q">Fishbone (cause-and-effect) diagram</div>
+      <p class="find">Possible causes of low-streaming songs, grouped into six categories. ✓ = checked with our data (result shown; full numbers in the comparison table below). ○ = not measurable with public data.</p>
+      <div id="a-fish"></div>
+    </section>
+    <section class="grid g2">
+      <div class="card">
+        <div class="q">Comparing groups of songs (medians, daily streams)</div>
+        <table id="a-cmp"><thead><tr><th>Comparison</th><th class="n">Group A</th><th class="n">Group B</th><th>Same result in both albums?</th><th>Takeaway</th></tr></thead><tbody></tbody></table>
+        <p class="note" style="margin-top:8px">We use the median (the middle song) because one huge hit (¿Qué Vas a Hacer Hoy?) pulls every average up. Small groups (under 5 songs) are marked. Treat them as hints, not proof.</p>
+      </div>
+      <div class="card">
+        <div class="q">5 Whys: the weakest group</div>
+        <ol class="whys" id="a-whys"></ol>
+        <p class="note">Steps 3–5 are hypotheses about listener behavior, to be confirmed with playlist data. They're not measured here.</p>
+      </div>
+    </section>
+
+    <div class="phase" id="d-improve"><span class="L">I</span><div><h2>Improve: what Omar should do on Album 3</h2><p>Recommendations ranked by how consistent the evidence is.</p></div></div>
+    <section class="grid g2" style="margin-top:8px">
+      <div class="card" id="i-recs"></div>
+      <div class="card">
+        <div class="q">Album 3 tracklist calculator</div>
+        <p class="find">Pick a tracklist and see the expected daily streams once the album settles. The math is song count × median, using POR SI MAÑANA NO ESTOY as the baseline.</p>
+        <div class="plan">
+          <div>
+            <label>Total songs: <b id="pv-n"></b></label><input type="range" id="p-n" min="10" max="24" value="17">
+            <label>Intro / interlude / outro tracks: <b id="pv-k"></b></label><input type="range" id="p-k" min="0" max="4" value="0">
+          </div>
+          <div class="out" id="p-out"></div>
+        </div>
+        <p class="note" id="p-note" style="margin-top:10px"></p>
+      </div>
+    </section>
+
+    <section class="card" id="d-timing">
+      <div class="q">When to release Album 3</div>
+      <p class="find" id="t-head"></p>
+      <div class="grid g2">
+        <div>
+          <div class="q" style="margin-top:6px">Singles lead time: past albums vs plan</div>
+          <div id="t-lanes"></div>
+          <p class="note">Days before each album's release. Dots are singles, ◆ is the album. The Album 3 lane is the recommended rollout.</p>
+        </div>
+        <div>
+          <div class="q" style="margin-top:6px">Recommended calendar</div>
+          <table id="t-cal"><thead><tr><th>Step</th><th>Date</th><th>Why</th></tr></thead><tbody></tbody></table>
+        </div>
+      </div>
+      <div class="q" style="margin-top:14px">Evidence</div>
+      <table id="t-ev"><thead><tr><th>Rule of thumb from past albums</th><th>Points to</th><th>How we got it</th></tr></thead><tbody></tbody></table>
+      <p class="note" style="margin-top:10px">Limits: based on only 2 past albums. Competing releases, holidays and seasonality aren't considered. Tour dates come from press reports (shows announced through Dec 7, 2026 in Chile).</p>
+    </section>
+
+    <div class="phase" id="d-control"><span class="L">C</span><div><h2>Control</h2><p>How to keep the gains and spot problems early</p></div></div>
+    <section class="grid g2" style="margin-top:8px">
+      <div class="card">
+        <div class="q">Momentum ratio: is each song gaining or fading?</div>
+        <p class="find" id="c-mom-f"></p>
+        <div id="c-mom"></div>
+        <p class="note">Ratio = current daily streams ÷ average streams per day since release. Above 1 means the song is doing better now than its own average (growing). Below 1 means it's fading. Per-day figures use each song's own release date.</p>
+      </div>
+      <div class="card">
+        <div class="q">Control plan</div>
+        <table><thead><tr><th>What</th><th>How</th><th>Trigger → action</th></tr></thead><tbody>
+          <tr><td class="wr">Weekly streams, A-class songs</td><td class="wr">Run chart of daily streams, one point per weekly kworb pull (below)</td><td class="wr">Sudden jump (a viral spike) → push it with a remix, video or playlist pitch</td></tr>
+          <tr><td class="wr">Momentum ratio, album 2</td><td class="wr">Recalculated every week: current ÷ average per day</td><td class="wr">Median below 0.8 for 4 weeks in a row → start the Album 3 single rollout</td></tr>
+          <tr><td class="wr">Album 3 vs plan</td><td class="wr">Compare actual daily streams to the calculator's estimate at 30 and 90 days</td><td class="wr">More than 20% below plan → revisit singles and features</td></tr>
+          <tr><td class="wr">Data quality</td><td class="wr">Check the row count (one row per song) and the as-of date on each refresh</td><td class="wr">Missing song or old date → fix the source before reporting</td></tr>
+        </tbody></table>
+      </div>
+    </section>
+    <section class="grid g2">
+      <div class="card">
+        <div class="q">Run chart: whole-album daily streams, week by week</div>
+        <p class="find" id="c-run-f"></p>
+        <div id="c-run"></div>
+        <p class="note">One point per weekly snapshot. The dashed line for each album is the median of its points, the standard run-chart center line. Watch for runs of points on one side of it, or sudden jumps.</p>
+      </div>
+      <div class="card">
+        <div class="q">Trigger chart: album 2 momentum ratio, week by week</div>
+        <p class="find" id="c-trig-f"></p>
+        <div id="c-trig"></div>
+        <p class="note">Median momentum ratio of Por Si Mañana's songs at each snapshot. When it stays below the 0.8 line for 4 weeks in a row, start the Album 3 singles.</p>
+      </div>
+    </section>
+</div>
+</div>
+<div class="tip" id="tip"></div>
+
+<script src="data.js"></script>
+<script src="history.js"></script>
+<script src="status.js"></script>
+<script>
+const DATA = window.OC_DATA;
+const HISTORY = window.OC_HISTORY || [];
+const ALB = ["PRIMERA MUSA","POR SI MAÑANA NO ESTOY"];
+const SHORT = {"PRIMERA MUSA":"Primera Musa","POR SI MAÑANA NO ESTOY":"Por Si Mañana No Estoy"};
+const MLAB = {DailyStreams:"current daily streams",StreamsPerDay:"streams per day since release",TotalStreams:"total streams"};
+const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+const col = a => a===ALB[0]?css('--a'):css('--b');
+const fmt = v => v>=1e9?(v/1e9).toFixed(2)+"B":v>=1e6?(v/1e6).toFixed(v>=1e8?0:1)+"M":v>=1e3?Math.round(v/1e3)+"K":String(Math.round(v));
+const pct = v => Math.round(v*100)+"%";
+const mmss = s => Math.floor(s/60)+":"+String(Math.round(s%60)).padStart(2,"0");
+const median = a => {if(!a.length)return NaN;const s=[...a].sort((x,y)=>x-y),m=s.length>>1;return s.length%2?s[m]:(s[m-1]+s[m])/2};
+const pearson=(x,y)=>{const n=x.length;if(n<3)return NaN;const mx=d3.mean(x),my=d3.mean(y);let c=0,vx=0,vy=0;for(let i=0;i<n;i++){c+=(x[i]-mx)*(y[i]-my);vx+=(x[i]-mx)**2;vy+=(y[i]-my)**2}return c/Math.sqrt(vx*vy)};
+
+
+const st={metric:"DailyStreams",album:"all",xpre:false,xtop:false};
+const tip=document.getElementById("tip");
+function showTip(e,html){tip.innerHTML=html;tip.style.opacity=1;const r=tip.getBoundingClientRect();let x=e.clientX+14,y=e.clientY+14;if(x+r.width>innerWidth-8)x=e.clientX-r.width-14;if(y+r.height>innerHeight-8)y=e.clientY-r.height-14;tip.style.left=x+"px";tip.style.top=y+"px"}
+const hideTip=()=>tip.style.opacity=0;
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const tipHtml=d=>`<b>${esc(d.Title)}</b><br>${SHORT[d.Album]} · #${d.TrackNo}<br>${d.Features?"ft. "+esc(d.Features)+"<br>":""}${d.Duration}<br>Daily ${fmt(d.DailyStreams)} · Total ${fmt(d.TotalStreams)}<br>Per day since release ${fmt(d.StreamsPerDay)}`;
+
+function filtered(){
+  let r=DATA.filter(d=>st.album==="all"||d.Album===st.album);
+  if(st.xpre) r=r.filter(d=>d.PreReleaseSingle!=="Yes");
+  if(st.xtop){const tops=new Set(ALB.map(a=>d3.greatest(DATA.filter(d=>d.Album===a),d=>d.TotalStreams).TrackID));r=r.filter(d=>!tops.has(d.TrackID))}
+  return r;
+}
+const albumsIn=r=>ALB.filter(a=>r.some(d=>d.Album===a));
+const W=el=>Math.max(300,el.clientWidth);
+
+function seg(id,key){document.querySelectorAll(`#${id} button`).forEach(b=>b.onclick=()=>{st[key]=b.dataset.v;document.querySelectorAll(`#${id} button`).forEach(x=>x.classList.toggle("on",x===b));render()})}
+seg("metric","metric");seg("album","album");
+xpre.onchange=e=>{st.xpre=e.target.checked;render()};xtop.onchange=e=>{st.xtop=e.target.checked;render()};
+
+function kpis(r){
+  const box=d3.select("#kpicards").html("");
+  albumsIn(r).forEach(a=>{
+    const s=r.filter(d=>d.Album===a), all=DATA.filter(d=>d.Album===a);
+    const tot=d3.sum(s,d=>d.TotalStreams), days=all[0].DaysSinceAlbum;
+    const sorted=[...s].sort((x,y)=>y.TotalStreams-x.TotalStreams);
+    const top3=d3.sum(sorted.slice(0,3),d=>d.TotalStreams)/tot;
+    const c=box.append("div").attr("class","card");
+    c.append("div").attr("class","albhead").html(`<span class="dot" style="background:${col(a)}"></span>${SHORT[a]} <span class="pill">${days} days out</span>`);
+    const k=c.append("div").attr("class","kpis");
+    [[fmt(tot),"total streams"],[fmt(tot/days),"streams per day since release"],[fmt(d3.sum(s,d=>d.DailyStreams)),"current daily streams"],
+     [pct(top3),"top-3 songs' share"],[s.length+" songs · "+d3.sum(s,d=>d.IsCollab==="Yes")+" with features",""],[mmss(d3.mean(s,d=>d.DurationSec)),"average duration"]]
+     .forEach(([v,l])=>{const e=k.append("div").attr("class","kpi");e.append("div").attr("class","v").style("font-size",l?null:"15px").text(v);if(l)e.append("div").attr("class","l").text(l)});
+  });
+}
+
+function rankChart(r){
+  const el=document.getElementById("c-rank"),m=st.metric;const data=[...r].sort((a,b)=>b[m]-a[m]);
+  const w=W(el),rowH=20,ml=Math.min(230,w*0.38),mr=58,h=data.length*rowH+24;
+  const x=d3.scaleLinear().domain([0,d3.max(data,d=>d[m])]).range([ml,w-mr]);
+  const svg=d3.select(el).html("").append("svg").attr("width","100%").attr("viewBox",`0 0 ${w} ${h}`);
+  const g=svg.selectAll("g").data(data).join("g").attr("transform",(d,i)=>`translate(0,${i*rowH+4})`)
+    .on("mousemove",(e,d)=>showTip(e,tipHtml(d))).on("mouseleave",hideTip);
+  g.append("text").attr("class","lbl").attr("x",ml-8).attr("y",13).attr("text-anchor","end").text(d=>(d.IsCollab==="Yes"?"★ ":"")+d.Title);
+  g.append("rect").attr("x",ml).attr("y",3).attr("height",rowH-6).attr("rx",3).attr("width",d=>x(d[m])-ml).attr("fill",d=>col(d.Album));
+  g.append("text").attr("x",d=>x(d[m])+5).attr("y",13).text(d=>fmt(d[m]));
+  d3.select("#leg1").html(albumsIn(r).map(a=>`<span><i class="dot" style="background:${col(a)}"></i>${SHORT[a]}</span>`).join("")+`<span>★ has a featured artist</span>`);
+  const t=data[0];d3.select("#f-rank").text(`${t.Title} leads on ${MLAB[m]} (${fmt(t[m])}). ${data.slice(0,10).filter(d=>d.Album===ALB[1]).length} of the top 10 are from Por Si Mañana No Estoy.`);
+}
+
+function groupedBars(el,groups,series,valueOf,countOf,fmtV){
+  const w=W(el),h=230,ml=46,mb=34,mt=18;
+  const x0=d3.scaleBand().domain(groups).range([ml,w-8]).padding(.25);
+  const x1=d3.scaleBand().domain(series.map(s=>s.key)).range([0,x0.bandwidth()]).padding(.08);
+  const max=d3.max(groups.flatMap(g=>series.map(s=>valueOf(g,s.key)||0)))||1;
+  const y=d3.scaleLinear().domain([0,max*1.15]).range([h-mb,mt]);
+  const svg=d3.select(el).html("").append("svg").attr("width","100%").attr("viewBox",`0 0 ${w} ${h}`);
+  svg.append("g").attr("class","axis").attr("transform",`translate(${ml},0)`).call(d3.axisLeft(y).ticks(4).tickFormat(fmt));
+  svg.append("g").attr("class","axis").attr("transform",`translate(0,${h-mb})`).call(d3.axisBottom(x0).tickSize(0)).selectAll("text").attr("class","lbl").attr("dy","1.2em");
+  groups.forEach(g=>series.forEach(s=>{const v=valueOf(g,s.key);if(v==null||isNaN(v))return;const n=countOf(g,s.key);
+    svg.append("rect").attr("x",x0(g)+x1(s.key)).attr("width",x1.bandwidth()).attr("y",y(v)).attr("height",y(0)-y(v)).attr("rx",3).attr("fill",s.color).attr("opacity",s.op||1)
+      .on("mousemove",e=>showTip(e,`<b>${esc(g)} · ${esc(s.label)}</b><br>Median ${fmt(v)} · ${n} song${n===1?"":"s"}`)).on("mouseleave",hideTip);
+    svg.append("text").attr("x",x0(g)+x1(s.key)+x1.bandwidth()/2).attr("y",y(v)-4).attr("text-anchor","middle").text(fmtV(v)+" (n="+n+")");}));
+  return svg;
+}
+
+function featChart(r){
+  const el=document.getElementById("c-feat"),m=st.metric,al=albumsIn(r);
+  const series=[{key:"Yes",label:"With feature",color:css('--fg'),op:.85},{key:"No",label:"Solo",color:css('--muted'),op:.45}];
+  const pick=(a,k)=>r.filter(d=>d.Album===a&&d.IsCollab===k);
+  groupedBars(el,al.map(a=>SHORT[a]),series,(g,k)=>median(pick(ALB.find(a=>SHORT[a]===g),k).map(d=>d[m])),(g,k)=>pick(ALB.find(a=>SHORT[a]===g),k).length,fmt);
+  d3.select(el).insert("div",":first-child").attr("class","legend").html(`<span><i class="dot" style="background:${css('--fg')};opacity:.85"></i>With feature</span><span><i class="dot" style="background:${css('--muted')};opacity:.45"></i>Solo</span>`);
+  const txt=al.map(a=>{const c=median(pick(a,"Yes").map(d=>d[m])),s=median(pick(a,"No").map(d=>d[m]));const l=(c-s)/s;return `${SHORT[a]}: ${isNaN(l)?"n/a":(l>=0?"+":"")+pct(l)}`}).join(" · ");
+  d3.select("#f-feat").text(`Median ${MLAB[m]} for songs with a feature vs solo songs. Lift: ${txt}.`);
+}
+
+function whoChart(r){
+  const el=document.getElementById("c-who"),m=st.metric;
+  const rows=[];r.forEach(d=>d.Features&&d.Features.split(", ").forEach(a=>rows.push({artist:a,d})));
+  rows.sort((a,b)=>b.d[m]-a.d[m]);
+  const w=W(el),rowH=22,ml=Math.min(200,w*.42),mr=56,h=rows.length*rowH+8;
+  const x=d3.scaleLinear().domain([0,d3.max(rows,o=>o.d[m])||1]).range([ml,w-mr]);
+  const solo=median(r.filter(d=>d.IsCollab==="No").map(d=>d[m]));
+  const svg=d3.select(el).html("").append("svg").attr("width","100%").attr("viewBox",`0 0 ${w} ${h+16}`);
+  const g=svg.selectAll("g.r").data(rows).join("g").attr("class","r").attr("transform",(o,i)=>`translate(0,${i*rowH+4})`).on("mousemove",(e,o)=>showTip(e,tipHtml(o.d))).on("mouseleave",hideTip);
+  g.append("text").attr("class","lbl").attr("x",ml-8).attr("y",14).attr("text-anchor","end").text(o=>o.artist);
+  g.append("rect").attr("x",ml).attr("y",4).attr("height",rowH-8).attr("rx",3).attr("width",o=>x(o.d[m])-ml).attr("fill",o=>col(o.d.Album));
+  g.append("text").attr("x",o=>x(o.d[m])+5).attr("y",14).text(o=>fmt(o.d[m]));
+  if(!isNaN(solo)){svg.append("line").attr("x1",x(solo)).attr("x2",x(solo)).attr("y1",0).attr("y2",h).attr("stroke",css('--fg')).attr("stroke-dasharray","3 3");
+    svg.append("text").attr("x",x(solo)+4).attr("y",h+12).text("solo median "+fmt(solo));}
+  const above=rows.filter(o=>o.d[m]>solo).length;
+  d3.select("#f-who").text(rows.length?`${above} of ${rows.length} featured-artist appearances beat the solo median. The bar shows the song's ${MLAB[m]}. The dashed line is the median for solo songs in this view.`:"No featured songs in this view.");
+}
+
+function durChart(r){
+  const el=document.getElementById("c-dur"),m=st.metric,al=albumsIn(r);
+  const w=W(el),h=260,ml=50,mb=34,mt=20,mr=12;
+  const x=d3.scaleLinear().domain(d3.extent(r,d=>d.DurationSec)).nice().range([ml,w-mr]);
+  const y=d3.scaleLog().domain(d3.extent(r,d=>d[m])).nice().range([h-mb,mt]);
+  const svg=d3.select(el).html("").append("svg").attr("width","100%").attr("viewBox",`0 0 ${w} ${h}`);
+  svg.append("g").attr("class","axis").attr("transform",`translate(0,${h-mb})`).call(d3.axisBottom(x).ticks(6).tickFormat(mmss));
+  svg.append("g").attr("class","axis").attr("transform",`translate(${ml},0)`).call(d3.axisLeft(y).ticks(4,fmt).tickFormat(v=>{const l=Math.log10(v);return Math.abs(l-Math.round(l))<1e-9||[2,5].includes(+String(v)[0])?fmt(v):""}));
+  svg.append("text").attr("x",w-mr).attr("y",h-4).attr("text-anchor","end").text("song duration (m:ss)");
+  svg.selectAll("circle").data(r).join("circle").attr("cx",d=>x(d.DurationSec)).attr("cy",d=>y(d[m])).attr("r",6).attr("fill",d=>col(d.Album)).attr("fill-opacity",.8).attr("stroke",css('--panel'))
+    .on("mousemove",(e,d)=>showTip(e,tipHtml(d))).on("mouseleave",hideTip);
+  const rs=al.map(a=>{const s=r.filter(d=>d.Album===a);return `${SHORT[a]} r = ${pearson(s.map(d=>d.DurationSec),s.map(d=>d[m])).toFixed(2)}`});
+  d3.select("#f-dur").text(`Duration vs ${MLAB[m]}: ${rs.join(" · ")}. There is no strong relationship in either album.`);
+}
+
+function concChart(r){
+  const el=document.getElementById("c-conc"),al=albumsIn(r);
+  const w=W(el),h=260,ml=40,mb=34,mt=16,mr=14;
+  const maxN=d3.max(al,a=>r.filter(d=>d.Album===a).length);
+  const x=d3.scaleLinear().domain([1,maxN]).range([ml,w-mr]),y=d3.scaleLinear().domain([0,1]).range([h-mb,mt]);
+  const svg=d3.select(el).html("").append("svg").attr("width","100%").attr("viewBox",`0 0 ${w} ${h}`);
+  svg.append("g").attr("class","axis").attr("transform",`translate(0,${h-mb})`).call(d3.axisBottom(x).ticks(Math.min(maxN,9)).tickFormat(d3.format("d")));
+  svg.append("g").attr("class","axis").attr("transform",`translate(${ml},0)`).call(d3.axisLeft(y).ticks(5).tickFormat(d3.format(".0%")));
+  svg.append("text").attr("x",w-mr).attr("y",h-4).attr("text-anchor","end").text("songs, biggest first");
+  const out=[];
+  al.forEach(a=>{const s=r.filter(d=>d.Album===a).sort((p,q)=>q.TotalStreams-p.TotalStreams),tot=d3.sum(s,d=>d.TotalStreams);let c=0;
+    const pts=s.map((d,i)=>({i:i+1,v:(c+=d.TotalStreams)/tot,d}));
+    svg.append("path").datum(pts).attr("fill","none").attr("stroke",col(a)).attr("stroke-width",2.5).attr("d",d3.line().x(p=>x(p.i)).y(p=>y(p.v)));
+    svg.selectAll(null).data(pts).join("circle").attr("cx",p=>x(p.i)).attr("cy",p=>y(p.v)).attr("r",3.5).attr("fill",col(a))
+      .on("mousemove",(e,p)=>showTip(e,`<b>${SHORT[a]}</b><br>Top ${p.i} songs = ${pct(p.v)} of streams<br>#${p.i}: ${esc(p.d.Title)}`)).on("mouseleave",hideTip);
+    out.push(`${SHORT[a]}: top 3 = ${pct(pts[Math.min(2,pts.length-1)].v)} of ${s.length} songs`)});
+  d3.select("#f-conc").text(out.join(" · ")+". Based on total streams.");
+}
+
+
+let sortK="DailyStreams",sortD=-1;
+function dataTable(r){
+  const cols=[["Title","Song"],["Album","Album"],["TrackNo","#",1],["Duration","Length"],["Features","Features"],["ReleaseType","Release"],["DailyStreams","Daily",1],["StreamsPerDay","Per day since release",1],["TotalStreams","Total",1]];
+  const rows=[...r].sort((a,b)=>{const x=a[sortK],y=b[sortK];return (typeof x==="number"?x-y:String(x).localeCompare(String(y)))*sortD});
+  const t=d3.select("#datatbl").html("");
+  t.append("thead").append("tr").selectAll("th").data(cols).join("th").attr("class",c=>c[2]?"n":null).text(c=>c[1]+(c[0]===sortK?(sortD<0?" ↓":" ↑"):"")).on("click",(e,c)=>{sortD=sortK===c[0]?-sortD:(c[2]?-1:1);sortK=c[0];dataTable(filtered())});
+  t.append("tbody").selectAll("tr").data(rows).join("tr").selectAll("td").data(d=>cols.map(c=>[c,d])).join("td").attr("class",([c])=>c[2]?"n":null)
+    .text(([c,d])=>c[0]==="Album"?SHORT[d.Album]:c[2]&&c[0]!=="TrackNo"?d[c[0]].toLocaleString("en-US"):d[c[0]]);
+}
+
+function lead(){
+  const a=DATA.filter(d=>d.Album===ALB[0]),b=DATA.filter(d=>d.Album===ALB[1]);
+  const va=d3.sum(a,d=>d.TotalStreams)/a[0].DaysSinceAlbum,vb=d3.sum(b,d=>d.TotalStreams)/b[0].DaysSinceAlbum;
+  d3.select("#lead").text(`Por Si Mañana No Estoy is earning streams ${(vb/va).toFixed(1)}× faster than Primera Musa and depends less on a few hits. Features line up with more streams on the new album but barely on the first. Duration shows no clear effect.`);
+}
+
+function render(full=true){const r=filtered();kpis(r);rankChart(r);featChart(r);whoChart(r);durChart(r);concChart(r);dataTable(r)}
+lead();render();
+// ---------- tabs ----------
+function showTab(){
+  const t = ["#dmaic","#dashboard"].includes(location.hash) ? location.hash.slice(1) : "about";
+  ["about","dashboard","dmaic"].forEach(k=>document.getElementById("tab-"+k).hidden = t!==k);
+  document.getElementById("lead").hidden = t!=="dashboard";
+  document.querySelector(".controls").style.display = t==="dashboard" ? "" : "none";
+  document.querySelectorAll("#tabs a").forEach(a=>a.classList.toggle("on",a.dataset.t===t));
+  if(t==="dmaic") renderDMAIC(); else if(t==="dashboard") render(false); else renderAbout();
+}
+addEventListener("hashchange",showTab);
+document.querySelectorAll("[data-jump]").forEach(a=>a.onclick=e=>{e.preventDefault();document.getElementById(a.dataset.jump).scrollIntoView({behavior:"smooth"})});
+
+// ---------- shared numbers ----------
+const SKITS = new Set(["Intro","Interludio","Outro","Dulces SueñoZzz (+Interludio)"]);
+const isSkit = d => SKITS.has(d.Title);
+const A2 = DATA.filter(d=>d.Album===ALB[1]);
+const BASE = {
+  full: median(A2.filter(d=>!isSkit(d)).map(d=>d.DailyStreams)), nFull: A2.filter(d=>!isSkit(d)).length,
+  skit: median(A2.filter(isSkit).map(d=>d.DailyStreams)), nSkit: A2.filter(isSkit).length,
+  a2Total: d3.sum(A2,d=>d.DailyStreams), a2Med: median(A2.map(d=>d.DailyStreams)), a2N: A2.length
+};
+const ratio = d => d.DailyStreams/d.StreamsPerDay;
+const MR = a => median(DATA.filter(d=>d.Album===a).map(ratio));
+
+// group comparisons: A vs B, per album and overall, on daily streams
+const CMP = [
+  {key:"skit", label:"Intro/interlude/outro vs full songs", a:isSkit, b:d=>!isSkit(d), la:"Intro/interlude/outro", lb:"Full songs"},
+  {key:"feat", label:"Featured artist vs solo", a:d=>d.IsCollab==="Yes", b:d=>d.IsCollab!=="Yes", la:"With feature", lb:"Solo"},
+  {key:"single", label:"Pre-release single vs album track", a:d=>d.PreReleaseSingle==="Yes", b:d=>d.PreReleaseSingle!=="Yes", la:"Pre-release single", lb:"Album track"},
+  {key:"short", label:"Under 3:30 vs 3:30 or longer", a:d=>d.DurationSec<210, b:d=>d.DurationSec>=210, la:"Under 3:30", lb:"3:30+"},
+  {key:"late", label:"Second half of tracklist vs first half", a:d=>d.TrackNo>DATA.filter(x=>x.Album===d.Album).length/2, b:d=>d.TrackNo<=DATA.filter(x=>x.Album===d.Album).length/2, la:"Second half", lb:"First half"}
+].map(c=>{
+  const per=ALB.map(al=>{const s=DATA.filter(d=>d.Album===al),A=s.filter(c.a),B=s.filter(c.b);const ma=median(A.map(d=>d.DailyStreams)),mb=median(B.map(d=>d.DailyStreams));return {al,na:A.length,nb:B.length,ma,mb,diff:ma/mb-1}});
+  const dir=per.map(p=>p.diff>0.10?1:p.diff<-0.10?-1:0);
+  const consistent=dir[0]===dir[1]&&dir[0]!==0, none=dir[0]===0&&dir[1]===0;
+  const small=per.some(p=>p.na<5||p.nb<5);
+  return {...c,per,dir:consistent?dir[0]:0,consistent,none,small,
+    oa:median(DATA.filter(c.a).map(d=>d.DailyStreams)),ob:median(DATA.filter(c.b).map(d=>d.DailyStreams)),
+    verdict:consistent?(dir[0]>0?"Higher in both albums":"Lower in both albums"):none?"About the same in both":"Mixed: albums disagree"};
+});
+const C = Object.fromEntries(CMP.map(c=>[c.key,c]));
+
+function abcRows(){
+  const s=[...DATA].sort((a,b)=>b.TotalStreams-a.TotalStreams),tot=d3.sum(s,d=>d.TotalStreams);let c=0;
+  return s.map((d,i)=>{const before=c/tot;c+=d.TotalStreams;const cls=before<0.8?"A":before<0.95?"B":"C";return {d,i:i+1,cum:c/tot,cls}});
+}
+
+function renderDMAIC(){
+  // Measure baseline
+  const mb=d3.select("#m-base").html("");
+  ALB.forEach(a=>{const s=DATA.filter(d=>d.Album===a);
+    [[fmt(median(s.map(d=>d.DailyStreams))),`median daily per song · ${SHORT[a]}`],[fmt(d3.sum(s,d=>d.DailyStreams)),`daily, whole album · ${SHORT[a]}`]]
+    .forEach(([v,l])=>{const e=mb.append("div").attr("class","kpi");e.append("div").attr("class","v").style("color",col(a)).text(v);e.append("div").attr("class","l").text(l)})});
+  processMap(); pareto(); fishbone(); cmpTable(); whys(); recs(); planner(); renderTiming(); momentum(); runCharts();
+}
+
+function processMap(){
+  const steps=["Write & record","Choose features","Order the tracklist","Release singles","Album release (Friday)","Promote & tour","Streams"];
+  const el=document.getElementById("d-pmap"),w=W(el),cols=w<520?2:steps.length,bw=(w-(cols-1)*14)/cols,bh=46,rows=Math.ceil(steps.length/cols),h=rows*(bh+22);
+  const svg=d3.select(el).html("").append("svg").attr("width","100%").attr("viewBox",`0 0 ${w} ${h}`);
+  steps.forEach((s,i)=>{const r=Math.floor(i/cols),c=i%cols,x=c*(bw+14),y=r*(bh+22);
+    svg.append("rect").attr("x",x).attr("y",y).attr("width",bw).attr("height",bh).attr("rx",8).attr("fill",i===steps.length-1?css('--b'):css('--soft')).attr("stroke",css('--line'));
+    const t=svg.append("text").attr("x",x+bw/2).attr("y",y+bh/2).attr("text-anchor","middle").attr("dominant-baseline","middle").style("fill",i===steps.length-1?"#fff":css('--fg')).style("font-size",cols>4?"10px":"12px");
+    const words=s.split(" ");if(cols>4&&words.length>1){const half=Math.ceil(words.length/2);t.append("tspan").attr("x",x+bw/2).attr("dy","-0.6em").text(words.slice(0,half).join(" "));t.append("tspan").attr("x",x+bw/2).attr("dy","1.2em").text(words.slice(half).join(" "))}else t.text(s);
+    if(i<steps.length-1&&c<cols-1)svg.append("path").attr("d",`M${x+bw+2},${y+bh/2} l9,0 m-4,-4 l4,4 l-4,4`).attr("stroke",css('--muted')).attr("fill","none");
+  });
+}
+
+function pareto(){
+  const rows=abcRows(), el=document.getElementById("a-abc"), w=W(el), h=280, ml=46, mr=46, mb2=30, mt=14;
+  const cc={A:css('--fg'),B:css('--muted'),C:css('--line')};
+  const x=d3.scaleBand().domain(rows.map(r=>r.i)).range([ml,w-mr]).padding(.15);
+  const y=d3.scaleLinear().domain([0,d3.max(rows,r=>r.d.TotalStreams)]).nice().range([h-mb2,mt]);
+  const y2=d3.scaleLinear().domain([0,1]).range([h-mb2,mt]);
+  const svg=d3.select(el).html("").append("svg").attr("width","100%").attr("viewBox",`0 0 ${w} ${h}`);
+  svg.append("g").attr("class","axis").attr("transform",`translate(${ml},0)`).call(d3.axisLeft(y).ticks(4).tickFormat(fmt));
+  svg.append("g").attr("class","axis").attr("transform",`translate(${w-mr},0)`).call(d3.axisRight(y2).ticks(5).tickFormat(d3.format(".0%")));
+  svg.append("g").attr("class","axis").attr("transform",`translate(0,${h-mb2})`).call(d3.axisBottom(x).tickValues(rows.filter(r=>r.i%5===1).map(r=>r.i)).tickSize(0)).selectAll("text").attr("dy","1.2em");
+  [0.8,0.95].forEach(v=>{svg.append("line").attr("x1",ml).attr("x2",w-mr).attr("y1",y2(v)).attr("y2",y2(v)).attr("stroke",css('--muted')).attr("stroke-dasharray","3 4");svg.append("text").attr("x",w-mr-4).attr("y",y2(v)-4).attr("text-anchor","end").text(v*100+"%")});
+  svg.selectAll("rect.b").data(rows).join("rect").attr("class","b").attr("x",r=>x(r.i)).attr("width",x.bandwidth()).attr("y",r=>y(r.d.TotalStreams)).attr("height",r=>y(0)-y(r.d.TotalStreams)).attr("rx",2).attr("fill",r=>cc[r.cls])
+    .attr("stroke",r=>col(r.d.Album)).attr("stroke-width",r=>r.cls==="C"?1.2:0)
+    .on("mousemove",(e,r)=>showTip(e,`<b>#${r.i} ${esc(r.d.Title)}</b><br>${SHORT[r.d.Album]} · Class ${r.cls}<br>Total ${fmt(r.d.TotalStreams)} · cumulative ${pct(r.cum)}`)).on("mouseleave",hideTip);
+  svg.append("path").datum(rows).attr("fill","none").attr("stroke",css('--a')).attr("stroke-width",2).attr("d",d3.line().x(r=>x(r.i)+x.bandwidth()/2).y(r=>y2(r.cum)));
+  const n=k=>rows.filter(r=>r.cls===k).length, cs=rows.filter(r=>r.cls==="C");
+  d3.select("#a-abc-leg").html(`<span><i class="dot" style="background:${cc.A}"></i>A: top 80% of streams</span><span><i class="dot" style="background:${cc.B}"></i>B: next 15%</span><span><i class="dot" style="background:${cc.C};outline:1px solid ${css('--muted')}"></i>C: last 5%</span><span><i class="dot" style="background:${css('--a')}"></i>cumulative %</span>`);
+  d3.select("#a-abc-f").text(`${n("A")} songs (A) earn 80% of streams, ${n("B")} (B) the next 15%, and ${n("C")} (C) only 5%. The C group: ${cs.map(r=>r.d.Title).join(", ")}. All ${rows.filter(r=>r.cls!=="A"&&isSkit(r.d)).length} intro/interlude/outro tracks fall in B or C.`);
+}
+
+function fishbone(){
+  const v=k=>C[k].consistent?(C[k].dir>0?"higher on both":"lower on both"):C[k].none?"no difference":"mixed";
+  const feats=[];DATA.forEach(d=>d.Features&&d.Features.split(", ").forEach(()=>feats.push(d.DailyStreams)));
+  const m1=median(DATA.filter(d=>d.Album===ALB[0]).map(d=>d.DailyStreams)),m2=median(A2.map(d=>d.DailyStreams));
+  const bones=[
+    {cat:"Song",items:[["✓","Intro/outro: "+v("skit")],["✓","Length: "+v("short")],["○","Hook / quality"]]},
+    {cat:"Collaboration",items:[["✓","Feature: "+v("feat")],["✓",`Artist: ${fmt(d3.min(feats))}–${fmt(d3.max(feats))}/day`],["○","Artist fit"]]},
+    {cat:"Release",items:[["✓","Single: "+v("single")],["○","Weekday (always Thu/Fri)"],["○","Competing releases"]]},
+    {cat:"Tracklist",items:[["✓","2nd half: "+v("late")],["✓","Size: 17 vs 18 songs"]]},
+    {cat:"Promotion",items:[["○","Music videos"],["○","Playlist placement"],["○","Tour & live shows"]]},
+    {cat:"Audience",items:[["✓",`Fan base: album 2 ≈ ${(m2/m1).toFixed(1)}× album 1`],["○","Region / language"]]}];
+  const el=document.getElementById("a-fish"),vw=W(el),cw=Math.max(vw,980),hw=160,spineY=200,h=400,left=10,right=cw-hw-16;
+  const svg=d3.select(el).html("").append("div").style("overflow-x","auto").append("svg").attr("viewBox",`0 0 ${cw} ${h}`).attr("width",vw<980?cw:"100%");
+  svg.append("line").attr("x1",left).attr("x2",right).attr("y1",spineY).attr("y2",spineY).attr("stroke",css('--fg')).attr("stroke-width",2.5);
+  svg.append("rect").attr("x",right).attr("y",spineY-38).attr("width",hw).attr("height",76).attr("rx",10).attr("fill",css('--a'));
+  const ht=svg.append("text").attr("x",right+hw/2).attr("y",spineY-6).attr("text-anchor","middle").style("fill","#fff").style("font-weight","600").style("font-size","13px");
+  ht.append("tspan").attr("x",right+hw/2).text("Low streams on");ht.append("tspan").attr("x",right+hw/2).attr("dy","1.3em").text("some album songs");
+  const slot=(right-left)/3;
+  bones.forEach((b,i)=>{const top=i<3,c=i%3,xEnd=left+slot*(c+1)-6,xStart=xEnd-70,yEnd=top?34:h-34;
+    svg.append("line").attr("x1",xStart).attr("y1",yEnd).attr("x2",xEnd).attr("y2",spineY).attr("stroke",css('--muted')).attr("stroke-width",1.5);
+    svg.append("text").attr("class","lbl").attr("x",xStart).attr("y",top?yEnd-12:yEnd+20).attr("text-anchor","middle").style("font-weight","600").text(b.cat);
+    b.items.forEach((it,j)=>{const t=(j+1)/(b.items.length+1),yy=yEnd+(spineY-yEnd)*t,xx=xStart+(xEnd-xStart)*t;
+      svg.append("line").attr("x1",xx-10).attr("x2",xx).attr("y1",yy).attr("y2",yy).attr("stroke",css('--line'));
+      svg.append("text").attr("x",xx-14).attr("y",yy+4).attr("text-anchor","end").style("font-size","11px").style("fill",it[0]==="✓"?css('--fg'):css('--muted')).text(`${it[0]} ${it[1]}`)});
+  });
+}
+
+function cmpTable(){
+  const tb=d3.select("#a-cmp tbody").html("");
+  CMP.forEach(c=>{const tr=tb.append("tr");
+    tr.append("td").attr("class","wr").html(`<b>${esc(c.la)}</b> vs ${esc(c.lb)}`+c.per.map(p=>`<div class="note">${SHORT[p.al]}: ${fmt(p.ma)} (${p.na}) vs ${fmt(p.mb)} (${p.nb})</div>`).join(""));
+    tr.append("td").attr("class","n").text(fmt(c.oa));tr.append("td").attr("class","n").text(fmt(c.ob));
+    tr.append("td").append("span").attr("class","conf "+(c.consistent?"c-hi":c.none?"c-lo":"c-md")).text(c.consistent?"Yes":c.none?"No difference":"No");
+    tr.append("td").attr("class","wr").text(c.verdict+(c.small?". Small group, treat as a hint":""));
+  });
+}
+
+function whys(){
+  const c=C.skit;
+  const W5=[
+    ["Why do some album songs earn so few streams?",`The bottom of the Pareto (B and C) holds all ${DATA.filter(isSkit).length} intro/interlude/outro tracks.`,"data"],
+    ["Why do those tracks stream less than others?",`Their median is ${fmt(c.oa)}/day vs ${fmt(c.ob)} for full songs, ${c.consistent?"lower on both albums":"on these albums"}.`,"data"],
+    ["Why are they built that way?","They're transitions made for listening to the album front to back, not standalone songs.","hypothesis"],
+    ["Why does that hurt streams?","Most streams come from playlists and shuffle, where transition tracks rarely get picked.","hypothesis"],
+    ["Root cause","Tracklist slots go to album-flow pieces instead of songs that work on their own. Fix: fold transitions into full songs (Recommendation 1).","root"]];
+  const ol=d3.select("#a-whys").html("");
+  W5.forEach(([q,a,t])=>{const li=ol.append("li");li.append("div").style("font-weight","600").text(q);li.append("div").attr("class","ev").text(a+(t==="hypothesis"?" (hypothesis)":t==="data"?" (from our data)":""))});
+}
+
+function recs(){
+  const feats=[];DATA.forEach(d=>d.Features&&d.Features.split(", ").forEach(a=>feats.push({a,d})));
+  feats.sort((x,y)=>y.d.DailyStreams-x.d.DailyStreams);
+  const top=feats.slice(0,4).map(o=>`${o.a} (${fmt(o.d.DailyStreams)}/day)`).join(", ");
+  const low=feats.slice(-3).map(o=>`${o.a} (${fmt(o.d.DailyStreams)}/day)`).join(", ");
+  const top3=a=>{const s=DATA.filter(d=>d.Album===a).sort((x,y)=>y.TotalStreams-x.TotalStreams),t=d3.sum(s,d=>d.TotalStreams);return d3.sum(s.slice(0,3),d=>d.TotalStreams)/t};
+  const sg=DATA.filter(d=>d.PreReleaseSingle==="Yes").map(d=>d.DailyStreams);
+  const lab=c=>c.consistent?["c-hi","Same result on both albums"]:c.none?["c-md","No difference on either album"]:["c-md","Albums disagree"];
+  const pc=(c,i)=>`${SHORT[c.per[i].al]} ${fmt(c.per[i].ma)} vs ${fmt(c.per[i].mb)}`;
+  const M=timingPlan();
+  const R=[
+    ["Cut the filler: at most one intro, interlude or outro",...lab(C.skit),
+     `Median ${fmt(C.skit.oa)}/day vs ${fmt(C.skit.ob)} for full songs (${pc(C.skit,0)}; ${pc(C.skit,1)}). All of them sit in the B/C part of the Pareto. Fold transitions into full songs instead of giving them their own track.`],
+    ["Close strong",...lab(C.late),
+     `Second half of the tracklist vs first half: ${pc(C.late,0)}; ${pc(C.late,1)}. Both albums end on a strong song (Luces de Colores, Por Si Mañana No Estoy). Keep that pattern.`],
+    ["Choose featured artists for fit, not quantity",...lab(C.feat),
+     `With a feature vs solo: ${pc(C.feat,0)}; ${pc(C.feat,1)}. A feature doesn't guarantee more streams. The partners who delivered: ${top}. The weakest: ${low}.`],
+    ["Use 1–2 singles to build buzz, with the strongest songs",...lab(C.single),
+     `Pre-release singles vs album tracks: ${pc(C.single,0)}; ${pc(C.single,1)}. But singles range from ${fmt(d3.min(sg))} to ${fmt(d3.max(sg))}/day, so the song matters more than the single slot.`],
+    ["Keep 16–18 songs and protect the A-class core","c-lo","Only 2 albums to compare",
+     `The 18-song album was less top-heavy (top 3 = ${pct(top3(ALB[1]))} vs ${pct(top3(ALB[0]))}) and streams more per song. Two albums can't prove that size causes this, so keep the same size and replace weak tracks rather than add more.`],
+    ["Let songs run their natural length",...lab(C.short),
+     `Under 3:30 vs 3:30 or longer: ${pc(C.short,0)}; ${pc(C.short,1)}. There's no consistent reason to shorten songs.`],
+    [`Release Album 3 on ${fdate(M.target)}`,"c-md","Based on 2 past albums",
+     `Same ${M.gap}-day gap as between albums 1 and 2, landing on a Friday, after the current tour. Lead single about ${M.lead} days before. Details in "When to release Album 3".`]];
+  const box=d3.select("#i-recs").html(`<div class="q">Album 3 brief</div><p class="find">Seven recommendations, strongest evidence first. Each label shows whether the two albums agreed.</p>`);
+  R.forEach(([h,c,cl,e],i)=>{const r=box.append("div").attr("class","rec");r.append("h3").html(`${i+1}. ${esc(h)}<span class="conf ${c}">${esc(cl)}</span>`);r.append("p").attr("class","ev").text(e)});
+}
+
+function planner(){
+  const upd=()=>{const n=+document.getElementById("p-n").value,k=+document.getElementById("p-k").value;
+    document.getElementById("pv-n").textContent=n;document.getElementById("pv-k").textContent=k;
+    const full=n-k, exp=full*BASE.full+k*BASE.skit, base=BASE.nFull*BASE.full+BASE.nSkit*BASE.skit, vs=exp/base-1;
+    d3.select("#p-out").html("").call(o=>{
+      o.append("div").attr("class","note").text("Expected daily streams, whole album");
+      o.append("div").attr("class","v").text(fmt(exp));
+      o.append("div").attr("class","note").text(`= ${full} full songs × ${fmt(BASE.full)} + ${k} × ${fmt(BASE.skit)}`);
+      o.append("div").attr("class","note").style("margin-top",".5em").text(`Album 2, same method: ${BASE.nFull} × ${fmt(BASE.full)} + ${BASE.nSkit} × ${fmt(BASE.skit)} = ${fmt(base)}`);
+      o.append("div").style("margin-top",".4em").style("font-weight","600").style("color",vs>=0?css('--ok'):css('--bad')).text(`${vs>=0?"+":""}${pct(vs)} vs album 2`);
+    });
+    d3.select("#p-note").text(`Each full song counts as ${fmt(BASE.full)}/day, the median of the ${BASE.nFull} full songs on Por Si Mañana No Estoy. Each intro/interlude/outro counts as ${fmt(BASE.skit)}/day (median of ${BASE.nSkit}). Features and singles aren't in the math because neither showed a consistent effect on both albums. Album 2 is calculated the same way so the comparison is fair. Its actual total (${fmt(BASE.a2Total)}) is higher because hits like Koko sit above the median. It's a planning estimate, not a guarantee.`);
+  };
+  ["n","k"].forEach(i=>document.getElementById("p-"+i).oninput=upd); upd();
+}
+
+// ---------- release timing ----------
+const DAY=864e5, dt=s=>new Date(s+"T12:00:00Z"), addD=(d,n)=>new Date(d.getTime()+n*DAY);
+const fdate=d=>d.toLocaleDateString("en-US",{weekday:"short",month:"short",day:"numeric",year:"numeric",timeZone:"UTC"});
+const nearestFri=d=>{const w=d.getUTCDay(),off=((5-w)+7)%7,back=off-7;return addD(d,Math.abs(back)<off?back:off)};
+function timingPlan(){
+  const a1=dt("2024-09-20"), a2=dt("2026-02-19"), gap=(a2-a1)/DAY;
+  const leads=DATA.filter(d=>d.ReleaseType==="Pre-release single").map(d=>({d,days:(dt(d.AlbumReleaseDate)-dt(d.SingleReleaseDate))/DAY}));
+  const last=ALB.map(a=>d3.min(leads.filter(l=>l.d.Album===a),l=>l.days)), first=ALB.map(a=>d3.max(leads.filter(l=>l.d.Album===a),l=>l.days));
+  const lead=Math.round(d3.mean(last)), byGap=addD(a2,gap), target=nearestFri(byGap), leadSingle=nearestFri(addD(target,-lead)), teaser=dt("2027-01-15");
+  return {a1,a2,gap,leads,last,first,lead,byGap,target,leadSingle,teaser};
+}
+function renderTiming(){
+  const M=timingPlan();
+  d3.select("#t-head").text(`Target: ${fdate(M.target)}. Release the lead single around ${fdate(M.leadSingle)} and a teaser single in January 2027, after the current tour.`);
+  const el=document.getElementById("t-lanes"),w=W(el),ml=150,mr=20,laneH=54,h=laneH*3+34;
+  const x=d3.scaleLinear().domain([-330,20]).range([ml,w-mr]);
+  const svg=d3.select(el).html("").append("svg").attr("width","100%").attr("viewBox",`0 0 ${w} ${h}`);
+  svg.append("g").attr("class","axis").attr("transform",`translate(0,${h-24})`).call(d3.axisBottom(x).tickValues([-300,-240,-180,-120,-60,0]).tickFormat(v=>v===0?"release":v+"d"));
+  const lane=a=>M.leads.filter(l=>l.d.Album===a).map(l=>({x:-l.days,lab:l.d.Title,tip:`${l.d.Title}: ${l.d.SingleReleaseDate} (${l.days} days before)`}));
+  const lanes=[{name:SHORT[ALB[0]],c:col(ALB[0]),pts:lane(ALB[0])},{name:SHORT[ALB[1]],c:col(ALB[1]),pts:lane(ALB[1])},
+    {name:"Album 3 (plan)",c:css('--fg'),plan:true,pts:[{x:-Math.round((M.target-M.teaser)/DAY),lab:"Teaser single",tip:`Teaser single ~${fdate(M.teaser)}`},{x:-Math.round((M.target-M.leadSingle)/DAY),lab:"Lead single",tip:`Lead single ${fdate(M.leadSingle)}`}]}];
+  lanes.forEach((L,i)=>{const y=i*laneH+26;
+    svg.append("text").attr("class","lbl").attr("x",ml-10).attr("y",y+4).attr("text-anchor","end").style("font-weight",L.plan?"600":null).text(L.name);
+    svg.append("line").attr("x1",x(-330)).attr("x2",x(0)).attr("y1",y).attr("y2",y).attr("stroke",css('--line')).attr("stroke-dasharray",L.plan?"4 3":null);
+    svg.append("path").attr("d",d3.symbol(d3.symbolDiamond,90)()).attr("transform",`translate(${x(0)},${y})`).attr("fill",L.c);
+    L.pts.sort((a,b)=>a.x-b.x).forEach((p,j)=>{svg.append("circle").attr("cx",x(p.x)).attr("cy",y).attr("r",6).attr("fill",L.plan?css('--panel'):L.c).attr("stroke",L.c).attr("stroke-width",2).on("mousemove",e=>showTip(e,esc(p.tip))).on("mouseleave",hideTip);
+      svg.append("text").attr("x",x(p.x)).attr("y",y+(j%2?20:-11)).attr("text-anchor","middle").style("font-size","10px").text(p.lab.length>16?p.lab.slice(0,15)+"…":p.lab)});
+  });
+  const ev=[["Same gap between albums",fdate(M.byGap),`${M.gap} days from album 1 (Sep 20, 2024) to album 2 (Feb 19, 2026), added again`],
+    ["Friday release",fdate(M.target),"Album 1 came out on a Friday and album 2 on a Thursday-night premiere. Friday is the global release day and starts the weekly chart count, so we move to the nearest Friday."],
+    ["Lead single timing",`~${M.lead} days before`,`The last single before each album came ${M.last.join(" and ")} days early`],
+    ["Tour",`After Dec 2026`,"Current tour shows are announced through Dec 7, 2026. Start new-music promotion after the tour."],
+    ["Momentum check",`Album 2 ratio now ${MR(ALB[1]).toFixed(2)}`,"When the weekly median drops below 0.8, the rollout should be underway (see Control)"]];
+  const tb=d3.select("#t-ev tbody").html("");ev.forEach(r=>{const tr=tb.append("tr");r.forEach((c,i)=>tr.append("td").attr("class",i===2?"wr":null).text(c))});
+  const cal=[["Teaser single","Jan 2027",`First taste after the tour (past first singles came ${M.first.join(" and ")} days early, which would land mid-tour)`],
+    ["Lead single",fdate(M.leadSingle),`About ${M.lead} days out, matching both past albums`],
+    ["Album 3 release",fdate(M.target),"Same gap as before, on a Friday"]];
+  const cb=d3.select("#t-cal tbody").html("");cal.forEach((r,i)=>{const tr=cb.append("tr").style("font-weight",i===2?"600":null);r.forEach((c,j)=>tr.append("td").attr("class",j===2?"wr":null).text(c))});
+}
+
+function momentum(){
+  const rows=DATA.map(d=>({d,idx:ratio(d)})).sort((a,b)=>b.idx-a.idx);
+  const el=document.getElementById("c-mom"), w=W(el), rowH=17, ml=Math.min(200,w*.42), h=rows.length*rowH+30;
+  const x=d3.scaleLinear().domain([0,d3.max(rows,r=>r.idx)*1.08]).range([ml,w-40]);
+  const svg=d3.select(el).html("").append("svg").attr("width","100%").attr("viewBox",`0 0 ${w} ${h}`);
+  svg.append("g").attr("class","axis").attr("transform",`translate(0,${h-20})`).call(d3.axisBottom(x).ticks(5).tickFormat(v=>v.toFixed(1)));
+  const g=svg.selectAll("g.m").data(rows).join("g").attr("class","m").attr("transform",(r,i)=>`translate(0,${i*rowH})`)
+    .on("mousemove",(e,r)=>showTip(e,`<b>${esc(r.d.Title)}</b><br>${SHORT[r.d.Album]}<br>Daily ${fmt(r.d.DailyStreams)} vs avg/day ${fmt(r.d.StreamsPerDay)}<br>Ratio ${r.idx.toFixed(2)}`)).on("mouseleave",hideTip);
+  g.append("text").attr("class","lbl").attr("x",ml-8).attr("y",12).attr("text-anchor","end").style("font-size","11px").text(r=>r.d.Title);
+  g.append("rect").attr("x",r=>Math.min(x(1),x(r.idx))).attr("y",3).attr("height",rowH-5).attr("width",r=>Math.abs(x(r.idx)-x(1))).attr("rx",2).attr("fill",r=>col(r.d.Album));
+  g.append("text").attr("x",r=>Math.max(x(1),x(r.idx))+4).attr("y",12).text(r=>r.idx.toFixed(2));
+  svg.append("line").attr("x1",x(1)).attr("x2",x(1)).attr("y1",0).attr("y2",h-20).attr("stroke",css('--fg'));
+  const grow=a=>DATA.filter(d=>d.Album===a&&ratio(d)>1).length;
+  d3.select("#c-mom-f").text(`${grow(ALB[0])} of 17 Primera Musa songs are above 1 (median ${MR(ALB[0]).toFixed(2)}): the older album is still growing. Only ${grow(ALB[1])} of 18 Por Si Mañana songs are (median ${MR(ALB[1]).toFixed(2)}), the normal fade after a launch. When that median holds below 0.8, it's time to start Album 3's singles.`);
+}
+
+
+function renderAbout(){
+  const rows=abcRows(), M=timingPlan(), n=k=>rows.filter(r=>r.cls===k).length;
+  const k=d3.select("#ab-kpis").html("");
+  [["35","songs analyzed"],["2","albums (2024, 2026)"],[fmt(d3.sum(DATA,d=>d.TotalStreams)),"total Spotify streams"],[fdate(M.target).replace(/^\w+, /,""),"recommended Album 3 release"]]
+    .forEach(([v,l])=>{const e=k.append("div").attr("class","kpi");e.append("div").attr("class","v").text(v);e.append("div").attr("class","l").text(l)});
+  const top3=a=>{const s=DATA.filter(d=>d.Album===a).sort((x,y)=>y.TotalStreams-x.TotalStreams),t=d3.sum(s,d=>d.TotalStreams);return d3.sum(s.slice(0,3),d=>d.TotalStreams)/t};
+  const F=[
+    [`Streams are concentrated.`,`${n("A")} of 35 songs earn 80% of all streams. On Primera Musa the top 3 songs alone earn ${pct(top3(ALB[0]))}.`],
+    [`Filler tracks underperform on both albums.`,`Intro/interlude/outro tracks have a median of ${fmt(C.skit.oa)}/day vs ${fmt(C.skit.ob)} for full songs.`],
+    [`Strong closers pay off.`,`Songs in the second half of each tracklist outstream the first half on both albums (${fmt(C.late.oa)} vs ${fmt(C.late.ob)}/day).`],
+    [`Features, singles and song length aren't reliable levers.`,`The two albums disagree on all three, so the song itself matters more.`],
+    [`The audience is growing.`,`The median song on album 2 streams about ${(median(A2.map(d=>d.DailyStreams))/median(DATA.filter(d=>d.Album===ALB[0]).map(d=>d.DailyStreams))).toFixed(1)}× the album 1 median, and album 1 songs are still gaining.`],
+    [`Release Album 3 on ${fdate(M.target)}.`,`Same ${M.gap}-day gap as last time, on a Friday, with the lead single around ${fdate(M.leadSingle)}.`]];
+  const ol=d3.select("#ab-find").html("");
+  F.forEach(([h,b])=>{const li=ol.append("li");li.append("div").style("font-weight","600").text(h);li.append("div").attr("class","ev").text(b)});
+}
+
+// ---------- weekly history ----------
+function snapSeries(){
+  const meta=Object.fromEntries(DATA.map(d=>[d.TrackID,d]));
+  return HISTORY.map(s=>{const date=dt(s.date);
+    const per=ALB.map(a=>d3.sum(Object.entries(s.rows).filter(([id])=>meta[id]&&meta[id].Album===a),([,v])=>v[1]));
+    const ratios=Object.entries(s.rows).filter(([id])=>meta[id]&&meta[id].Album===ALB[1]).map(([id,v])=>{const m=meta[id];const start=dt(m.PreReleaseSingle==="Yes"?m.SingleReleaseDate:m.AlbumReleaseDate);const days=(date-start)/DAY;return v[1]/(v[0]/days)});
+    return {date,per,ratio:median(ratios)}}).sort((a,b)=>a.date-b.date);
+}
+function runCharts(){
+  const S=snapSeries(), one=S.length<2;
+  const xd=one?[addD(S[0].date,-10),addD(S[0].date,10)]:d3.extent(S,s=>s.date);
+  const tf=d3.utcFormat("%b %d");
+  // run chart
+  let el=document.getElementById("c-run"),w=W(el),h=230,ml=48,mb=28,mt=14,mr=14;
+  let x=d3.scaleUtc().domain(xd).range([ml,w-mr]);
+  let y=d3.scaleLinear().domain([0,d3.max(S,s=>d3.max(s.per))*1.15]).range([h-mb,mt]);
+  let svg=d3.select(el).html("").append("svg").attr("width","100%").attr("viewBox",`0 0 ${w} ${h}`);
+  svg.append("g").attr("class","axis").attr("transform",`translate(0,${h-mb})`).call(d3.axisBottom(x).ticks(Math.min(6,Math.max(2,S.length))).tickFormat(tf));
+  svg.append("g").attr("class","axis").attr("transform",`translate(${ml},0)`).call(d3.axisLeft(y).ticks(4).tickFormat(fmt));
+  ALB.forEach((a,i)=>{const pts=S.map(s=>({date:s.date,v:s.per[i]})),med=median(pts.map(p=>p.v));
+    svg.append("line").attr("x1",ml).attr("x2",w-mr).attr("y1",y(med)).attr("y2",y(med)).attr("stroke",col(a)).attr("stroke-dasharray","4 4").attr("opacity",.7);
+    if(!one)svg.append("path").datum(pts).attr("fill","none").attr("stroke",col(a)).attr("stroke-width",2.2).attr("d",d3.line().x(p=>x(p.date)).y(p=>y(p.v)));
+    svg.selectAll(null).data(pts).join("circle").attr("cx",p=>x(p.date)).attr("cy",p=>y(p.v)).attr("r",4.5).attr("fill",col(a))
+      .on("mousemove",(e,p)=>showTip(e,`<b>${SHORT[a]}</b><br>${fdate(p.date)}<br>${fmt(p.v)} daily streams`)).on("mouseleave",hideTip);});
+  const L=S[S.length-1],P=S[S.length-2];
+  d3.select("#c-run-f").text(one?`${S.length} weekly snapshot so far (${fdate(S[0].date)}). The lines start when next week's pull arrives.`
+    :`${S.length} weekly snapshots. Since last week: ${ALB.map((a,i)=>`${SHORT[a]} ${L.per[i]>=P.per[i]?"+":""}${pct(L.per[i]/P.per[i]-1)}`).join(" · ")}.`);
+  // trigger chart
+  el=document.getElementById("c-trig");w=W(el);
+  x=d3.scaleUtc().domain(xd).range([ml,w-mr]);
+  y=d3.scaleLinear().domain([Math.min(0.6,d3.min(S,s=>s.ratio)-0.05),Math.max(1.1,d3.max(S,s=>s.ratio)+0.05)]).range([h-mb,mt]);
+  svg=d3.select(el).html("").append("svg").attr("width","100%").attr("viewBox",`0 0 ${w} ${h}`);
+  svg.append("g").attr("class","axis").attr("transform",`translate(0,${h-mb})`).call(d3.axisBottom(x).ticks(Math.min(6,Math.max(2,S.length))).tickFormat(tf));
+  svg.append("g").attr("class","axis").attr("transform",`translate(${ml},0)`).call(d3.axisLeft(y).ticks(5).tickFormat(d3.format(".2f")));
+  svg.append("line").attr("x1",ml).attr("x2",w-mr).attr("y1",y(0.8)).attr("y2",y(0.8)).attr("stroke",css('--bad')).attr("stroke-dasharray","5 4");
+  svg.append("text").attr("x",w-mr).attr("y",y(0.8)-5).attr("text-anchor","end").style("fill",css('--bad')).text("trigger 0.8");
+  if(!one)svg.append("path").datum(S).attr("fill","none").attr("stroke",col(ALB[1])).attr("stroke-width",2.2).attr("d",d3.line().x(s=>x(s.date)).y(s=>y(s.ratio)));
+  svg.selectAll(null).data(S).join("circle").attr("cx",s=>x(s.date)).attr("cy",s=>y(s.ratio)).attr("r",4.5).attr("fill",col(ALB[1]))
+    .on("mousemove",(e,s)=>showTip(e,`${fdate(s.date)}<br>Median ratio ${s.ratio.toFixed(2)}`)).on("mouseleave",hideTip);
+  let below=0;for(let i=S.length-1;i>=0&&S[i].ratio<0.8;i--)below++;
+  d3.select("#c-trig-f").text(below>=4?`Trigger reached: ${below} weeks in a row below 0.8. Start the Album 3 singles.`
+    :below>0?`Below 0.8 for ${below} week${below>1?"s":""} in a row (latest ${L.ratio.toFixed(2)}). The trigger fires at 4.`
+    :`Latest median ratio: ${L.ratio.toFixed(2)}, above the 0.8 trigger. No action yet.`);
+}
+function fillDates(){
+  const asof=dt(DATA[0].AsOf);
+  d3.selectAll(".asof").text(asof.toLocaleDateString("en-US",{month:"short",day:"numeric",year:"numeric",timeZone:"UTC"}));
+  d3.selectAll(".days1").text(DATA.find(d=>d.Album===ALB[0]).DaysSinceAlbum);
+  d3.selectAll(".days2").text(DATA.find(d=>d.Album===ALB[1]).DaysSinceAlbum);
+  d3.selectAll(".nsnap").text(`${HISTORY.length} weekly snapshot${HISTORY.length===1?"":"s"}`);
+  const ST=window.OC_STATUS||{};
+  d3.select("#upd-status").text(ST.final?`final update: ${ST.note||"Album 3 released"} (${HISTORY.length} weekly snapshots)`:`updated weekly (${HISTORY.length} snapshot${HISTORY.length===1?"":"s"})`);
+}
+
+fillDates();
+showTab();
+
+let rt;addEventListener("resize",()=>{clearTimeout(rt);rt=setTimeout(()=>render(false),150)});
+matchMedia("(prefers-color-scheme: dark)").addEventListener?.("change",()=>render(false));
+</script>
+</body>
+</html>
